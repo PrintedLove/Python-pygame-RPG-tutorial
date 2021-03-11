@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30621.155
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Python-pygame-RPG-tutorial", "Python-pygame-RPG-tutorial\Python-pygame-RPG-tutorial.pyproj", "{83605585-9185-46AB-AEE9-FE124C64C9CD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{83605585-9185-46AB-AEE9-FE124C64C9CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83605585-9185-46AB-AEE9-FE124C64C9CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D952613A-8827-4F08-891C-8927DD8028B9}
+	EndGlobalSection
+EndGlobal
