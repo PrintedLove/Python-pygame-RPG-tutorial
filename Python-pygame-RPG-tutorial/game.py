@@ -1,30 +1,78 @@
 # [Python pygame Game] RPG tutorial
-# made by "PrintedLove"
-# https://printed.tistory.com/
-# https://www.youtube.com/channel/UCtKTjiof6Mwa_4ffHDYyCbQ/
+# Made by "PrintedLove"
+# Referred to DaFluffyPotato's 'Physics - Pygame Tutorial: Making a Platformer'
 #-*-coding: utf-8
 
 import pygame, sys
 from datafile import *
-
-clock = pygame.time.Clock()
-
 from pygame.locals import *
 pygame.init()
 
-WINDOW_SIZE = (640, 480)
-screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)    #set window size
-pygame.display.set_caption('RPG tutorial')              #set window name
+#게임 컨트롤 변수
+pygame.display.set_caption('RPG tutorial')                                      # 창 이름 설정
+clock = pygame.time.Clock()
 
-spr_character = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 11)   #load Sprite Sheets
+WINDOW_SIZE = (640, 480)                                                        # 창 크기
 
-while True:     # game loop
-    screen.blit(spr_character.spr[0], (320, 240))
+screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)                            # 기본 스크린 사이즈
+screen_scaled = pygame.Surface((WINDOW_SIZE[0] / 4, WINDOW_SIZE[1] / 4))        # 확대한 스크린 사이즈
 
+# 리소스 불러오기
+spr_player = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 11)          # 플레이어 스프라이트 시트 불러오기
+
+# 플레이어 컨트롤 변수
+player_moveLeft = False
+player_moveRight = False
+
+player_position = [50, 50]              # 플레이어 좌표
+player_vspeed = 0                       # 플레이어 y가속도
+
+player_rect = pygame.rect.Rect(player_position[0], player_position[1], spr_player.height, spr_player.width)
+test_rect = pygame.rect.Rect(100, 200, 100, 50)
+
+while True:     # 메인 루프
+    screen_scaled.fill((27, 25, 25))
+
+    screen_scaled.blit(spr_player.spr[0], player_position)      # 플레이어 드로우
+
+    # 플레이어 컨트롤
+    if player_position[1] > WINDOW_SIZE[1] - spr_player.height:
+        player_vspeed = -player_vspeed
+    else:
+        player_vspeed += 0.2
+    player_position[1] += player_vspeed
+
+    if player_moveLeft == True:
+        player_position[0] -= 4
+    if player_moveRight == True:
+        player_position[0] += 4
+
+    player_rect.x = player_position[0]
+    player_rect.y = player_position[1]
+
+    if player_rect.colliderect(test_rect):
+        pygame.draw.rect(screen, (255, 0, 0), test_rect)
+    else:
+        pygame.draw.rect(screen, (0, 0, 0), test_rect)
+
+    # 이벤트 컨트롤
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
+        if event.type == KEYDOWN:
+            if event.key == K_LEFT:
+                player_moveLeft = True
+            if event.key == K_RIGHT:
+                player_moveRight = True
+        if event.type == KEYUP:
+            if event.key == K_LEFT:
+                player_moveLeft = False
+            if event.key == K_RIGHT:
+                player_moveRight = False
+
+    surf = pygame.transform.scale(screen_scaled, WINDOW_SIZE)       # 창 배율 적용
+    screen.blit(surf, (0, 0))
 
     pygame.display.update()
     clock.tick(60)
