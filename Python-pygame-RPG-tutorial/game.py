@@ -12,13 +12,14 @@ pygame.init()
 pygame.display.set_caption('RPG tutorial')                                      # 창 이름 설정
 clock = pygame.time.Clock()
 
-WINDOW_SIZE = (640, 480)                                                        # 창 크기
-
-screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)                            # 기본 스크린 사이즈
-screen_scaled = pygame.Surface((WINDOW_SIZE[0] / 4, WINDOW_SIZE[1] / 4))        # 확대한 스크린 사이즈
+screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)
+screen_scaled = pygame.Surface((WINDOW_SIZE[0] / 4, WINDOW_SIZE[1] / 4))        # 확대한 스크린
 
 # 리소스 불러오기
-spr_player = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 11)          # 플레이어 스프라이트 시트 불러오기
+spr_player = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 11)
+spr_map1 = SpriteSheet('spriteSheet3.png', 8, 8, 16, 16, 87)
+
+mapImage = createFloorImage(spr_map1)
 
 # 플레이어 컨트롤 변수
 player_moveLeft = False
@@ -28,15 +29,15 @@ player_position = [50, 50]              # 플레이어 좌표
 player_vspeed = 0                       # 플레이어 y가속도
 
 player_rect = pygame.rect.Rect(player_position[0], player_position[1], spr_player.height, spr_player.width)
-test_rect = pygame.rect.Rect(100, 200, 100, 50)
 
 while True:     # 메인 루프
-    screen_scaled.fill((27, 25, 25))
+    screen_scaled.fill((27, 25, 25))            # 화면 초기화
 
-    screen_scaled.blit(spr_player.spr[0], player_position)      # 플레이어 드로우
+    screen_scaled.blit(mapImage, (0, 0))      # 플레이어 드로우
+    screen_scaled.blit(spr_player.spr[10], player_position)      # 플레이어 드로우
 
     # 플레이어 컨트롤
-    if player_position[1] > WINDOW_SIZE[1] - spr_player.height:
+    if player_position[1] > WINDOW_SIZE[1] / 4 - spr_player.height:
         player_vspeed = -player_vspeed
     else:
         player_vspeed += 0.2
@@ -50,10 +51,10 @@ while True:     # 메인 루프
     player_rect.x = player_position[0]
     player_rect.y = player_position[1]
 
-    if player_rect.colliderect(test_rect):
-        pygame.draw.rect(screen, (255, 0, 0), test_rect)
-    else:
-        pygame.draw.rect(screen, (0, 0, 0), test_rect)
+    #if player_rect.colliderect(test_rect):
+    #    pygame.draw.rect(screen, (255, 0, 0), test_rect)
+    #else:
+    #    pygame.draw.rect(screen, (0, 0, 0), test_rect)
 
     # 이벤트 컨트롤
     for event in pygame.event.get():
