@@ -19,42 +19,84 @@ screen_scaled = pygame.Surface((WINDOW_SIZE[0] / 4, WINDOW_SIZE[1] / 4))        
 spr_player = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 11)
 spr_map1 = SpriteSheet('spriteSheet3.png', 8, 8, 16, 16, 87)
 
-mapImage = createFloorImage(spr_map1)
+mapImage = createMapImage(spr_map1)
 
 # 플레이어 컨트롤 변수
-player_moveLeft = False
-player_moveRight = False
+keyLeft = False
+keyRight = False
 
-player_position = [50, 50]              # 플레이어 좌표
-player_vspeed = 0                       # 플레이어 y가속도
+player_rect = pygame.Rect((64, 20), (6, 14))
+player_movement = [0, 0]            # 플레이어 프레임당 속도
+player_vspeed = 0                   # 플레이어 y가속도
+player_flytime = 0
 
-player_rect = pygame.rect.Rect(player_position[0], player_position[1], spr_player.height, spr_player.width)
+# 바닥과 충돌 검사 함수
+def collision_floor(rect):
+    hit_list = []
+    col = 0
+    for row in floor_map:
+        if row != -1:
+            floor_rect = pygame.rect.Rect((col * TILE_SIZE, row * TILE_SIZE), (TILE_SIZE, TILE_SIZE * 5))
+            if rect.colliderect(floor_rect):
+                hit_list.append(floor_rect)
+        col += 1
 
-while True:     # 메인 루프
+    return hit_list
+
+# 오브젝트 이동 함수
+def move(rect, movement):
+    collision_types = {'top' : False, 'bottom' : False, 'right' : False, 'left' : False}
+    rect.x += movement[0]
+    hit_list = collision_floor(rect)
+
+    for tile in hit_list:
+        if movement[0] > 0:
+            rect.right = tile.left
+            collision_types['right'] = True
+        elif movement[0] < 0:
+            rect.left = tile.right
+            collision_types['left'] = True
+
+    rect.y += movement[1]
+    hit_list = collision_floor(rect)
+
+    for tile in hit_list:
+        if movement[1] > 0:
+            rect.bottom = tile.top
+            collision_types['bottom'] = True
+        elif movement[1] < 0:
+            rect.top = tile.bottom
+            collision_types['top'] = True
+
+    return rect, collision_types
+
+# 메인 루프
+while True:
     screen_scaled.fill((27, 25, 25))            # 화면 초기화
 
-    screen_scaled.blit(mapImage, (0, 0))      # 플레이어 드로우
-    screen_scaled.blit(spr_player.spr[10], player_position)      # 플레이어 드로우
+    screen_scaled.blit(mapImage, (0, 0))        # 맵 드로우
 
     # 플레이어 컨트롤
-    if player_position[1] > WINDOW_SIZE[1] / 4 - spr_player.height:
-        player_vspeed = -player_vspeed
+    player_movement = [0, 0]
+    if keyLeft:
+        player_movement[0] -= 1
+    if keyRight:
+        player_movement[0] += 1
+    player_movement[1] += player_vspeed
+
+    player_vspeed += 0.2
+    if player_vspeed > 3:
+        player_vspeed = 3
+
+    player_rect, player_collision = move(player_rect, player_movement)       # 플레이어 이동
+
+    if player_collision['bottom']:
+        player_vspeed = 0
+        player_flytime = 0
     else:
-        player_vspeed += 0.2
-    player_position[1] += player_vspeed
+        player_flytime += 1
 
-    if player_moveLeft == True:
-        player_position[0] -= 4
-    if player_moveRight == True:
-        player_position[0] += 4
-
-    player_rect.x = player_position[0]
-    player_rect.y = player_position[1]
-
-    #if player_rect.colliderect(test_rect):
-    #    pygame.draw.rect(screen, (255, 0, 0), test_rect)
-    #else:
-    #    pygame.draw.rect(screen, (0, 0, 0), test_rect)
+    screen_scaled.blit(spr_player.spr[0], (player_rect.x - 5, player_rect.y - 2))      # 플레이어 드로우
 
     # 이벤트 컨트롤
     for event in pygame.event.get():
@@ -63,14 +105,16 @@ while True:     # 메인 루프
             sys.exit()
         if event.type == KEYDOWN:
             if event.key == K_LEFT:
-                player_moveLeft = True
+                keyLeft = True
             if event.key == K_RIGHT:
-                player_moveRight = True
+                keyRight = True
+            if event.key == K_UP and player_flytime < 6:
+                player_vspeed = -3
         if event.type == KEYUP:
             if event.key == K_LEFT:
-                player_moveLeft = False
+                keyLeft = False
             if event.key == K_RIGHT:
-                player_moveRight = False
+                keyRight = False
 
     surf = pygame.transform.scale(screen_scaled, WINDOW_SIZE)       # 창 배율 적용
     screen.blit(surf, (0, 0))
