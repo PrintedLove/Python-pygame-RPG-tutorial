@@ -15,66 +15,32 @@ clock = pygame.time.Clock()
 screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)
 screen_scaled = pygame.Surface((WINDOW_SIZE[0] / 4, WINDOW_SIZE[1] / 4))        # 확대한 스크린
 
+camera_scroll = [TILE_MAPSIZE[0] * 4, 0]              # 카메라 이동 좌표
+
 # 리소스 불러오기
 spr_player = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 11)
 spr_map1 = SpriteSheet('spriteSheet3.png', 8, 8, 16, 16, 87)
 
-mapImage = createMapImage(spr_map1)
+createMapData()     # 맵 데이터 초기화
+mapImage = createMapImage(spr_map1)     # 맵 이미지 생성
 
 # 플레이어 컨트롤 변수
 keyLeft = False
 keyRight = False
 
-player_rect = pygame.Rect((64, 20), (6, 14))
+player_rect = pygame.Rect((TILE_MAPSIZE[0] * 4, TILE_MAPSIZE[1] * 4 - 14), (6, 14))
 player_movement = [0, 0]            # 플레이어 프레임당 속도
 player_vspeed = 0                   # 플레이어 y가속도
 player_flytime = 0
-
-# 바닥과 충돌 검사 함수
-def collision_floor(rect):
-    hit_list = []
-    col = 0
-    for row in floor_map:
-        if row != -1:
-            floor_rect = pygame.rect.Rect((col * TILE_SIZE, row * TILE_SIZE), (TILE_SIZE, TILE_SIZE * 5))
-            if rect.colliderect(floor_rect):
-                hit_list.append(floor_rect)
-        col += 1
-
-    return hit_list
-
-# 오브젝트 이동 함수
-def move(rect, movement):
-    collision_types = {'top' : False, 'bottom' : False, 'right' : False, 'left' : False}
-    rect.x += movement[0]
-    hit_list = collision_floor(rect)
-
-    for tile in hit_list:
-        if movement[0] > 0:
-            rect.right = tile.left
-            collision_types['right'] = True
-        elif movement[0] < 0:
-            rect.left = tile.right
-            collision_types['left'] = True
-
-    rect.y += movement[1]
-    hit_list = collision_floor(rect)
-
-    for tile in hit_list:
-        if movement[1] > 0:
-            rect.bottom = tile.top
-            collision_types['bottom'] = True
-        elif movement[1] < 0:
-            rect.top = tile.bottom
-            collision_types['top'] = True
-
-    return rect, collision_types
 
 # 메인 루프
 while True:
     screen_scaled.fill((27, 25, 25))            # 화면 초기화
 
-    screen_scaled.blit(mapImage, (0, 0))        # 맵 드로우
+    camera_scroll[0] += int((player_rect.x - camera_scroll[0] - WINDOW_SIZE[0] / 8 - 5) / 16)       # 카메라 이동
+    camera_scroll[1] += int((player_rect.y - camera_scroll[1] - WINDOW_SIZE[1] / 8 - 2) / 16)
+
+    screen_scaled.blit(mapImage, (-camera_scroll[0], -camera_scroll[1]))        # 맵 드로우
 
     # 플레이어 컨트롤
     player_movement = [0, 0]
@@ -96,7 +62,8 @@ while True:
     else:
         player_flytime += 1
 
-    screen_scaled.blit(spr_player.spr[0], (player_rect.x - 5, player_rect.y - 2))      # 플레이어 드로우
+    screen_scaled.blit(spr_player.spr[0], (player_rect.x - camera_scroll[0] - 5
+                                           , player_rect.y - camera_scroll[1] - 2))      # 플레이어 드로우
 
     # 이벤트 컨트롤
     for event in pygame.event.get():
@@ -109,7 +76,7 @@ while True:
             if event.key == K_RIGHT:
                 keyRight = True
             if event.key == K_UP and player_flytime < 6:
-                player_vspeed = -3
+                player_vspeed = -3.5
         if event.type == KEYUP:
             if event.key == K_LEFT:
                 keyLeft = False

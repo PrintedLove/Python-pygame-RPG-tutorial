@@ -8,38 +8,10 @@ DIR_SOUND = os.path.join(DIR_PATH, 'sound')
 
 WINDOW_SIZE = (960, 640)            # 창 크기
 TILE_SIZE = 8                       # 타일 크기
-floor_map = [-1] * int(WINDOW_SIZE[0] / TILE_SIZE / 4)     # 바닥 타일 맵(-1: 없음, 이외: y좌표)
+TILE_MAPSIZE = (128, 32)
+floor_map = [-1] * TILE_MAPSIZE[0]     # 바닥 타일 맵(-1: 없음, 이외: y좌표)
 
 objects = []                # 오브젝트 리스트
-
-###### 테스트용 바닥 타일 리스트
-floor_map[1] = 14
-floor_map[2] = 13
-floor_map[3] = 13
-floor_map[4] = 13
-floor_map[5] = 13
-floor_map[6] = 13
-floor_map[7] = 13
-floor_map[8] = 13
-
-floor_map[12] = 10
-floor_map[13] = 9
-floor_map[14] = 9
-floor_map[15] = 9
-floor_map[16] = 10
-
-floor_map[18] = 11
-floor_map[19] = 10
-floor_map[20] = 10
-floor_map[21] = 10
-floor_map[22] = 10
-floor_map[23] = 11
-floor_map[24] = 11
-floor_map[25] = 11
-floor_map[26] = 11
-floor_map[27] = 11
-floor_map[28] = 12
-######
 
 # 스프라이트 시트 클래스
 class SpriteSheet:           
@@ -49,7 +21,7 @@ class SpriteSheet:
         self.width = width
         self.height = height
 
-        for i in range(max_index):
+        for i in range(max_index):      # 스프라이트 시트의 각 인덱스에 자른 이미지 저장
             image = pygame.Surface((width, height))
             image.blit(baseImage, (0, 0), 
                        ((i % max_row) * width, (i // max_col) * height, width, height))
@@ -72,9 +44,117 @@ def createObject(spr, coord, kinds):
     objects.append(obj)
     return obj
 
-# 바닥 타일 이미지 생성 함수
+# 바닥과 충돌 검사 함수
+def collision_floor(rect):
+    hit_list = []
+    col = 0
+    for row in floor_map:
+        if row != -1:
+            floor_rect = pygame.rect.Rect((col * TILE_SIZE, row * TILE_SIZE), (TILE_SIZE, TILE_SIZE * 5))
+            if rect.colliderect(floor_rect):
+                hit_list.append(floor_rect)
+        col += 1
+
+    return hit_list
+
+# 오브젝트 이동 함수
+def move(rect, movement):
+    collision_types = {'top' : False, 'bottom' : False, 'right' : False, 'left' : False}
+    rect.x += movement[0]
+    hit_list = collision_floor(rect)
+
+    for tile in hit_list:
+        if movement[0] > 0:
+            rect.right = tile.left
+            collision_types['right'] = True
+        elif movement[0] < 0:
+            rect.left = tile.right
+            collision_types['left'] = True
+
+    rect.y += movement[1]
+    hit_list = collision_floor(rect)
+
+    for tile in hit_list:
+        if movement[1] > 0:
+            rect.bottom = tile.top
+            collision_types['bottom'] = True
+        elif movement[1] < 0:
+            rect.top = tile.bottom
+            collision_types['top'] = True
+
+    return rect, collision_types
+
+# 맵 데이터 생성 함수
+def createMapData():
+    ground_baseheight = 16
+    ground_interval = 0      # 바닥 간 간격
+    ground_maxsize = random.randrange(13, 24)     # 바닥 최대 크기
+    ground_maxsize_count = 0
+    ground_size = random.randrange(2, 5)             # 바닥 단위 크기
+    ground_size_count = 0
+    ground_height = ground_baseheight + random.randrange(-2, 3)           # 바닥 높이
+    ground_heightChange = 0
+    ground_mode_stack = 1       # 큰 크기 스택 (큰 크기 1~4개 생성 후 작은 크기 1개 생성)
+    ground_mode_stackMax = random.randrange(2, 6)
+
+    for i in range(TILE_MAPSIZE[0] - 1):
+        if ground_interval > 0:         # 바닥 간격 띄우기
+            floor_map[i] = -1
+            ground_interval -= 1
+        else:
+            if ground_maxsize_count < ground_maxsize:
+                if ground_size_count < ground_size:
+                    if ground_maxsize_count == 0 and ground_size > 2:                     # 바닥 시작 처리
+                        floor_map[i] = ground_height + ground_heightChange + random.choice([0, 1])
+                        ground_size_count += 1
+                    else:
+                        floor_map[i] = ground_height + ground_heightChange
+                        ground_size_count += 1
+                else:
+                    if ground_maxsize_count == ground_maxsize - 1:      # 바닥 끝 처리
+                        if floor_map[i - 2] == floor_map[i - 1]:
+                            floor_map[i] = ground_height + ground_heightChange + random.choice([0, 1])
+                        else:
+                            floor_map[i] = floor_map[i - 1]
+
+                        ground_size_count += 1
+                    else:
+                        ground_size_count = 0
+                        ground_size = random.randrange(2, 5)
+                        ground_heightChange += random.choice([0, 1])
+                        
+                        if abs(ground_heightChange) > 2:
+                            ground_heightChange -= ground_heightChange // 3
+
+                        floor_map[i] = ground_height + ground_heightChange
+
+                ground_maxsize_count += 1
+            else:               # 바닥 완성시 다음 바닥 크기 및 간격 크기 처리
+                if ground_mode_stack < ground_mode_stackMax:    # 큰 크기
+                    ground_mode_stack += 1
+
+                    if ground_mode_stack == 1:
+                        ground_interval = random.randrange(2, 6)
+                    else:
+                        ground_interval = random.randrange(1, 4)
+
+                    ground_maxsize = random.randrange(13, 25)
+                    ground_size = random.randrange(2, 9)
+                else:                                           # 작은 크기
+                    ground_mode_stack = 0
+                    ground_mode_stackMax = random.randrange(2, 6)
+                    ground_interval = random.randrange(2, 6)
+                    ground_maxsize = random.randrange(4, 9)
+                    ground_size = random.randrange(2, 5)
+
+                ground_height = ground_baseheight + random.randrange(-1, 1)
+                ground_heightChange = 0
+                ground_maxsize_count = 0
+                ground_size_count = 0
+
+# 맵 이미지 생성 함수
 def createMapImage(tileSpr):
-    image = pygame.Surface((WINDOW_SIZE[0], WINDOW_SIZE[1]))
+    image = pygame.Surface((TILE_MAPSIZE[0] * 8, TILE_MAPSIZE[1] * 8))
     empty = True                        # 빈칸
     case = 0                            # 타일 타입
     spr_index, spr_index2 = 0, []       # 타일 스프라이트 인덱스
@@ -82,7 +162,7 @@ def createMapImage(tileSpr):
     pattern_back = 0
     pattern_0 = 0
 
-    for col in range(len(floor_map)):
+    for col in range(TILE_MAPSIZE[0] - 1):
         if floor_map[col] == -1:     # 비었을 경우
             empty = True
         else:                        # 타일이 존재할 경우
