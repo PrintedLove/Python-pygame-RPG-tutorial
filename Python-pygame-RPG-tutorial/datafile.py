@@ -30,6 +30,20 @@ class SpriteSheet:
             image.set_colorkey((0, 0, 0))
             self.spr.append(image)
 
+# 애니메이션 세트 생성 함수
+
+def createAnimationSet(spriteSheet, index_list, index_max = None):
+    spr = []
+
+    if index_max == None:
+        for index in index_list:
+            spr.append(spriteSheet.spr[index])
+    else:
+        for index in range(index_list, index_max + 1):
+            spr.append(spriteSheet.spr[index])
+
+    return spr
+
 # 기본 오브젝트 클래스
 class BaseObject:
     def __init__(self, spr, coord, kinds):
@@ -234,3 +248,13 @@ def createBackImage(tileSpr):
     image.set_colorkey((0, 0, 0))
 
     return image
+
+# 애니메이션 행동 변경 함수
+def change_playerAction(frame, action_var, new_var, frameSpd, new_frameSpd, aniMode, new_aniMode):
+    if action_var != new_var:
+        action_var = new_var
+        frame = 0
+        frameSpd = new_frameSpd
+        aniMode = new_aniMode
+
+    return frame, action_var, frameSpd, aniMode

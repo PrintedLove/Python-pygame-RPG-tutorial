@@ -18,13 +18,19 @@ screen_scaled = pygame.Surface((WINDOW_SIZE[0] / 4, WINDOW_SIZE[1] / 4))        
 camera_scroll = [TILE_MAPSIZE[0] * 4, 0]              # 카메라 이동 좌표
 
 # 리소스 불러오기
-spr_player = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 11)
-spr_object = SpriteSheet('spriteSheet2.png', 8, 8, 16, 16, 37)
-spr_map1 = SpriteSheet('spriteSheet3.png', 8, 8, 16, 16, 87)
+spriteSheet_player = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 12)      # 플레이어 스프라이트 시트
+spriteSheet_object = SpriteSheet('spriteSheet2.png', 8, 8, 16, 16, 37)      # 공통 오브젝트 스프라이트 시트
+spriteShee_map1 = SpriteSheet('spriteSheet3.png', 8, 8, 16, 16, 87)         # 지형 1 스프라이트 시트
 
-createMapData()                         # 맵 데이터 초기화
-mapImage = createMapImage(spr_map1)     # 맵 이미지 생성
-backImage = createBackImage(spr_object)
+spr_player = {}
+spr_player['stay'] = createAnimationSet(spriteSheet_player, [0])
+spr_player['run'] = createAnimationSet(spriteSheet_player, 1, 8)            # 플레이어 달리기
+spr_player['jump'] = createAnimationSet(spriteSheet_player, [9, 10, 11])        # 플레이어 점프
+
+createMapData()                                 # 맵 데이터 초기화
+mapImage = createMapImage(spriteShee_map1)              # 맵 이미지 생성
+backImage = createBackImage(spriteSheet_object)         # 배경 이미지 생성
+
 
 # 플레이어 컨트롤 변수
 keyLeft = False
@@ -33,7 +39,14 @@ keyRight = False
 player_rect = pygame.Rect((TILE_MAPSIZE[0] * 4, TILE_MAPSIZE[1] * 4 - 14), (6, 14))
 player_movement = [0, 0]            # 플레이어 프레임당 속도
 player_vspeed = 0                   # 플레이어 y가속도
-player_flytime = 0
+player_flytime = 0                  # 공중에 뜬 시간
+
+player_action = 'stay'              # 플레이어 현재 행동
+player_frame = 0                    # 플레이어 애니메이션 프레임
+player_frameSpeed = 1               # 플레이어 애니메이션 속도(낮을 수록 빠름. max 1)
+player_frameTimer = 0
+player_flip = False                 # 플레이어 이미지 반전 여부 (False: RIGHT)
+player_animationMode = True         # 애니메이션 모드 (False: 반복, True: 한번)
 
 # 메인 루프
 while True:
@@ -46,18 +59,32 @@ while True:
     screen_scaled.blit(mapImage, (-camera_scroll[0], -camera_scroll[1]))    # 맵 드로우
 
     # 플레이어 컨트롤
-    player_movement = [0, 0]
+    player_movement = [0, 0]                       # 플레이어 이동
     if keyLeft:
-        player_movement[0] -= 1
+        player_movement[0] -= 2
     if keyRight:
-        player_movement[0] += 1
+        player_movement[0] += 2
     player_movement[1] += player_vspeed
 
     player_vspeed += 0.2
     if player_vspeed > 3:
         player_vspeed = 3
 
-    player_rect, player_collision = move(player_rect, player_movement)       # 플레이어 이동
+    if player_movement[0] != 0:                  # 플레이어 걷기 애니메이션 처리 및 방향 전환
+        if player_flytime == 0:
+            player_frame, player_action, player_frameSpeed, player_animationMode = change_playerAction(
+                player_frame, player_action, 'run', player_frameSpeed, 3, player_animationMode, True)
+
+        if player_movement[0] > 0:
+            player_flip = False
+        else:
+            player_flip = True
+    else:
+        if player_flytime == 0:
+            player_frame, player_action, player_frameSpeed, player_animationMode = change_playerAction(
+                player_frame, player_action, 'stay', player_frameSpeed, 3, player_animationMode, True)
+
+    player_rect, player_collision = move(player_rect, player_movement)
 
     if player_collision['bottom']:
         player_vspeed = 0
@@ -65,8 +92,18 @@ while True:
     else:
         player_flytime += 1
 
-    screen_scaled.blit(spr_player.spr[0], (player_rect.x - camera_scroll[0] - 5
-                                           , player_rect.y - camera_scroll[1] - 2))      # 플레이어 드로우
+    player_frameTimer += 1                          # 플레이어 애니메이션 타이머
+    if player_frameTimer >= player_frameSpeed:
+        player_frame +=1
+        player_frameTimer = 0
+
+        if player_frame >= len(spr_player[player_action]):
+            if player_animationMode == True:
+                player_frame = 0
+            else:
+                player_frame -= 1
+
+    screen_scaled.blit(pygame.transform.flip(spr_player[player_action][player_frame], player_flip, False), (player_rect.x - camera_scroll[0] - 5, player_rect.y - camera_scroll[1] - 2))      # 플레이어 드로우
 
     # 이벤트 컨트롤
     for event in pygame.event.get():
@@ -80,6 +117,10 @@ while True:
                 keyRight = True
             if event.key == K_UP and player_flytime < 6:
                 player_vspeed = -3.5
+                player_flytime += 1
+
+                player_frame, player_action, player_frameSpeed, player_animationMode = change_playerAction(
+                    player_frame, player_action, 'jump', player_frameSpeed, 6, player_animationMode, False)
         if event.type == KEYUP:
             if event.key == K_LEFT:
                 keyLeft = False
