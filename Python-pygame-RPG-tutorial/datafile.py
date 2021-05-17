@@ -2,13 +2,15 @@
 
 import pygame, os, random
 
-DIR_PATH = os.path.dirname(__file__)
+DIR_PATH = os.path.dirname(__file__)    # 파일 위치
 DIR_IMAGE = os.path.join(DIR_PATH, 'image')
 DIR_SOUND = os.path.join(DIR_PATH, 'sound')
 
 WINDOW_SIZE = (960, 640)            # 창 크기
 TILE_SIZE = 8                       # 타일 크기
-TILE_MAPSIZE = (128, 32)
+TILE_MAPSIZE = (int(WINDOW_SIZE[0] / 7.5), int(WINDOW_SIZE[1] / 20))
+BACKGROUND_COLOR = (27, 25, 25)
+
 floor_map = [-1] * TILE_MAPSIZE[0]     # 바닥 타일 맵(-1: 없음, 이외: y좌표)
 
 objects = []                # 오브젝트 리스트
@@ -48,6 +50,7 @@ def createObject(spr, coord, kinds):
 def collision_floor(rect):
     hit_list = []
     col = 0
+
     for row in floor_map:
         if row != -1:
             floor_rect = pygame.rect.Rect((col * TILE_SIZE, row * TILE_SIZE), (TILE_SIZE, TILE_SIZE * 5))
@@ -59,11 +62,11 @@ def collision_floor(rect):
 
 # 오브젝트 이동 함수
 def move(rect, movement):
-    collision_types = {'top' : False, 'bottom' : False, 'right' : False, 'left' : False}
+    collision_types = {'top' : False, 'bottom' : False, 'right' : False, 'left' : False}    # 충돌 타입
     rect.x += movement[0]
     hit_list = collision_floor(rect)
 
-    for tile in hit_list:
+    for tile in hit_list:           # X축 충돌 리스트 갱신
         if movement[0] > 0:
             rect.right = tile.left
             collision_types['right'] = True
@@ -74,7 +77,7 @@ def move(rect, movement):
     rect.y += movement[1]
     hit_list = collision_floor(rect)
 
-    for tile in hit_list:
+    for tile in hit_list:           # Y축 충돌 리스트 갱신
         if movement[1] > 0:
             rect.bottom = tile.top
             collision_types['bottom'] = True
@@ -86,9 +89,9 @@ def move(rect, movement):
 
 # 맵 데이터 생성 함수
 def createMapData():
-    ground_baseheight = 16
-    ground_interval = 0      # 바닥 간 간격
-    ground_maxsize = random.randrange(13, 24)     # 바닥 최대 크기
+    ground_baseheight = 16      # 기본 바닥 높이
+    ground_interval = 0         # 바닥 간 간격
+    ground_maxsize = random.randrange(13, 24)        # 바닥 최대 크기
     ground_maxsize_count = 0
     ground_size = random.randrange(2, 5)             # 바닥 단위 크기
     ground_size_count = 0
@@ -210,4 +213,24 @@ def createMapImage(tileSpr):
                 for spr_indexs in spr_index2:
                     i += 1
                     image.blit(tileSpr.spr[spr_indexs], (col * TILE_SIZE, (floor_map[col] + i) * TILE_SIZE))
+
+    image.set_colorkey((0, 0, 0))
+
+    return image
+
+# 배경 이미지 생성함수
+def createBackImage(tileSpr):
+    image = pygame.Surface((int(WINDOW_SIZE[0] / 2), int(WINDOW_SIZE[1] / 12)))
+
+    for row in range(16):
+        for col in range(4):
+            star_case = random.randrange(-(col + 2), 3)
+
+            if star_case >= 0:
+                image.blit(tileSpr.spr[random.randrange(0, 31)]
+                           , (row * TILE_SIZE * 2 + random.randrange(-4, 5)
+                            , col * TILE_SIZE * 2 + random.randrange(-4, 5)))
+
+    image.set_colorkey((0, 0, 0))
+
     return image

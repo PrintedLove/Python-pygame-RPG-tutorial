@@ -19,10 +19,12 @@ camera_scroll = [TILE_MAPSIZE[0] * 4, 0]              # 카메라 이동 좌표
 
 # 리소스 불러오기
 spr_player = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 11)
+spr_object = SpriteSheet('spriteSheet2.png', 8, 8, 16, 16, 37)
 spr_map1 = SpriteSheet('spriteSheet3.png', 8, 8, 16, 16, 87)
 
-createMapData()     # 맵 데이터 초기화
+createMapData()                         # 맵 데이터 초기화
 mapImage = createMapImage(spr_map1)     # 맵 이미지 생성
+backImage = createBackImage(spr_object)
 
 # 플레이어 컨트롤 변수
 keyLeft = False
@@ -35,12 +37,13 @@ player_flytime = 0
 
 # 메인 루프
 while True:
-    screen_scaled.fill((27, 25, 25))            # 화면 초기화
+    screen_scaled.fill(BACKGROUND_COLOR)            # 화면 초기화
 
     camera_scroll[0] += int((player_rect.x - camera_scroll[0] - WINDOW_SIZE[0] / 8 - 5) / 16)       # 카메라 이동
     camera_scroll[1] += int((player_rect.y - camera_scroll[1] - WINDOW_SIZE[1] / 8 - 2) / 16)
 
-    screen_scaled.blit(mapImage, (-camera_scroll[0], -camera_scroll[1]))        # 맵 드로우
+    screen_scaled.blit(backImage, (0, 0))                                   # 배경 드로우
+    screen_scaled.blit(mapImage, (-camera_scroll[0], -camera_scroll[1]))    # 맵 드로우
 
     # 플레이어 컨트롤
     player_movement = [0, 0]
