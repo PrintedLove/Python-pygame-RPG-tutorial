@@ -103,7 +103,8 @@ while True:
             else:
                 player_frame -= 1
 
-    screen_scaled.blit(pygame.transform.flip(spr_player[player_action][player_frame], player_flip, False), (player_rect.x - camera_scroll[0] - 5, player_rect.y - camera_scroll[1] - 2))      # 플레이어 드로우
+    screen_scaled.blit(pygame.transform.flip(spr_player[player_action][player_frame], player_flip, False)
+                       , (player_rect.x - camera_scroll[0] - 5, player_rect.y - camera_scroll[1] - 2))      # 플레이어 드로우
 
     # 이벤트 컨트롤
     for event in pygame.event.get():
