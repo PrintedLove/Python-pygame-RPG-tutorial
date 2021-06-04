@@ -10,7 +10,7 @@ WINDOW_SIZE = (960, 640)            # 창 크기
 TILE_SIZE = 8                       # 타일 크기
 TILE_MAPSIZE = (int(WINDOW_SIZE[0] / 7.5), int(WINDOW_SIZE[1] / 20))
 BACKGROUND_COLOR = (27, 25, 25)
-
+ 
 floor_map = [-1] * TILE_MAPSIZE[0]     # 바닥 타일 맵(-1: 없음, 이외: y좌표)
 
 objects = []                # 오브젝트 리스트
@@ -30,9 +30,8 @@ class SpriteSheet:
             image.set_colorkey((0, 0, 0))
             self.spr.append(image)
 
-# 애니메이션 세트 생성 함수
-
-def createAnimationSet(spriteSheet, index_list, index_max = None):
+# 스프라이트 세트 생성 함수 
+def createSpriteSet(spriteSheet, index_list, index_max = None):
     spr = []
 
     if index_max == None:
@@ -48,16 +47,114 @@ def createAnimationSet(spriteSheet, index_list, index_max = None):
 class BaseObject:
     def __init__(self, spr, coord, kinds):
         self.spr = spr
-        self.coord = coord
-        self.width = spr.get_width()
-        self.height = spr.get_height()
+        self.spr_index = 0
+        self.width = spr[0].get_width()
+        self.height = spr[0].get_height()
+        self.direction = True
+        self.vspeed = 0
         self.kinds = kinds
-        self.rect = pygame.rect.Rect(coord[0], coord[1], width, height)
+        self.rect = pygame.rect.Rect(coord[0], coord[1], self.width, self.height)
+        self.destroy = False
+
+    def draw(self, screen, scroll):
+        screen.blit(pygame.transform.flip(self.spr[self.spr_index], self.direction, False)
+                    , (self.rect.x - scroll[0], self.rect.y - scroll[1]))
+        
+    def destroy(self):
+        objects.remove(self)
+        del(self)
+
+# 적 오브젝트 클래스
+class EnemyObject(BaseObject):
+    def __init__(self, spr, coord, kinds, types):
+        super().__init__(spr, coord, kinds)
+        self.types = types
+        self.frameSpeed = 0
+        self.frameTimer = 0
+        self.actSpeed = 0
+        self.actTimer = 0
+        self.hpm = 0
+        self.hp = 0
+
+    def events(self, player_rect):
+        movement = [0, 0]
+        movement[1] += self.vspeed
+        self.frameTimer += 1
+
+        self.vspeed += 0.2
+        if self.vspeed > 3:
+            self.vspeed = 3
+
+        if self.types == 'snake':       # 뱀일 경우
+            if self.frameTimer >= self.frameSpeed:
+                self.frameTimer = 0
+                if self.spr_index < len(self.spr) - 1:
+                    self.spr_index += 1
+                else:
+                    self.spr_index = 0
+
+            if self.direction == False:
+                if floor_map[self.rect.right // TILE_SIZE] != -1:
+                    movement[0] += 1
+                else:
+                    self.direction = True
+            else:
+                if floor_map[self.rect.right // TILE_SIZE - 1] != -1:
+                    movement[0] -= 1
+                else:
+                    self.direction = False
+        elif self.types == 'slime':       # 슬라임일 경우
+            self.actTimer += 1
+
+            if self.vspeed >= 0:
+                if self.frameTimer >= self.frameSpeed:
+                    self.frameTimer = 0
+                    if self.spr_index == 0:
+                        self.spr_index = 1
+                    else:
+                        self.spr_index = 0
+            else:
+                self.spr_index = 2
+
+            if self.actTimer == self.actSpeed - 35:
+                self.vspeed = -3
+            elif self.actTimer > self.actSpeed:
+                self.actTimer = 0
+            elif self.actTimer > self.actSpeed - 35:
+                if player_rect.x - self.rect.x > 0:
+                    if floor_map[self.rect.right // TILE_SIZE] != -1:
+                        self.direction = False
+                        movement[0] += 1
+                else:
+                    if floor_map[self.rect.right // TILE_SIZE - 1] != -1:
+                        self.direction = True
+                        movement[0] -= 1
+            
+        self.rect, collision = move(self.rect, movement)       # 적 움직임
+
+        if collision['bottom']:
+            self.vspeed = 0
+
+        if collision['right'] or collision['left']:
+            self.vspeed = -2
 
 # 오브젝트 생성 함수
-def createObject(spr, coord, kinds):            
-    obj = BaseObject(spr, coord, kinds)
+def createObject(spr, coord,  types):
+    if types == 'snake':
+        obj = EnemyObject(spr, coord, 'enemy', types)
+        obj.hpm = 100
+        obj.hp = obj.hpm
+        obj.frameSpeed = 4
+    if types == 'slime':
+        obj = EnemyObject(spr, coord, 'slime', types)
+        obj.hpm = 200
+        obj.hp = obj.hpm
+        obj.frameSpeed = 12
+        obj.actSpeed = 120
+        obj.actTimer = random.randrange(0, 120)
+
     objects.append(obj)
+
     return obj
 
 # 바닥과 충돌 검사 함수
@@ -170,8 +267,9 @@ def createMapData():
                 ground_size_count = 0
 
 # 맵 이미지 생성 함수
-def createMapImage(tileSpr):
+def createMapImage(tileSpr, structSpr):
     image = pygame.Surface((TILE_MAPSIZE[0] * 8, TILE_MAPSIZE[1] * 8))
+    front_image = pygame.Surface((TILE_MAPSIZE[0] * 8, TILE_MAPSIZE[1] * 8))
     empty = True                        # 빈칸
     case = 0                            # 타일 타입
     spr_index, spr_index2 = 0, []       # 타일 스프라이트 인덱스
@@ -228,9 +326,29 @@ def createMapImage(tileSpr):
                     i += 1
                     image.blit(tileSpr.spr[spr_indexs], (col * TILE_SIZE, (floor_map[col] + i) * TILE_SIZE))
 
-    image.set_colorkey((0, 0, 0))
+            # 구조물 채우기
+            if random.randrange(0, 100) <= 4 and case == 0:
+                if random.choice([True, False]):
+                    image.blit(tileSpr.spr[32], ((col) * TILE_SIZE, (floor_map[col] - 1) * TILE_SIZE))
+                else:
+                    image.blit(tileSpr.spr[35], ((col - 1) * TILE_SIZE, (floor_map[col] - 2) * TILE_SIZE))
+                    image.blit(tileSpr.spr[36], ((col) * TILE_SIZE, (floor_map[col] - 2) * TILE_SIZE))
+                    image.blit(tileSpr.spr[37], ((col - 1) * TILE_SIZE, (floor_map[col] - 1) * TILE_SIZE))
+                    image.blit(tileSpr.spr[38], ((col) * TILE_SIZE, (floor_map[col] - 1) * TILE_SIZE))
 
-    return image
+            if random.randrange(0, 100) <= 14:
+                struct_types = random.choice(['leaf', 'flower', 'obj', 'sign', 'gravestone', 'skull'])
+                struct_index = random.randrange(structSpr[struct_types][0], structSpr[struct_types][1])
+                front_image.blit( tileSpr.spr[struct_index], (col * TILE_SIZE, (floor_map[col] - 1) * TILE_SIZE))
+
+            if random.choice([True, False]):
+                struct_index = random.randrange(47, 55)
+                front_image.blit(tileSpr.spr[struct_index], (col * TILE_SIZE, (floor_map[col] - 1) * TILE_SIZE)) 
+
+    image.set_colorkey((0, 0, 0))
+    front_image.set_colorkey((0, 0, 0))
+
+    return image, front_image
 
 # 배경 이미지 생성함수
 def createBackImage(tileSpr):
@@ -245,6 +363,10 @@ def createBackImage(tileSpr):
                            , (row * TILE_SIZE * 2 + random.randrange(-4, 5)
                             , col * TILE_SIZE * 2 + random.randrange(-4, 5)))
 
+    image.blit(tileSpr.spr[31], (24 * TILE_SIZE, 2 * TILE_SIZE))
+    image.blit(tileSpr.spr[32], (25 * TILE_SIZE, 2 * TILE_SIZE))
+    image.blit(tileSpr.spr[33], (24 * TILE_SIZE, 3 * TILE_SIZE))
+    image.blit(tileSpr.spr[34], (25 * TILE_SIZE, 3 * TILE_SIZE))
     image.set_colorkey((0, 0, 0))
 
     return image

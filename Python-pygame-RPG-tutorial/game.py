@@ -20,17 +20,32 @@ camera_scroll = [TILE_MAPSIZE[0] * 4, 0]              # 카메라 이동 좌표
 # 리소스 불러오기
 spriteSheet_player = SpriteSheet('spriteSheet1.png', 16, 16, 8, 8, 12)      # 플레이어 스프라이트 시트
 spriteSheet_object = SpriteSheet('spriteSheet2.png', 8, 8, 16, 16, 37)      # 공통 오브젝트 스프라이트 시트
-spriteShee_map1 = SpriteSheet('spriteSheet3.png', 8, 8, 16, 16, 87)         # 지형 1 스프라이트 시트
+spriteSheet_map1 = SpriteSheet('spriteSheet3.png', 8, 8, 16, 16, 87)         # 지형 1 스프라이트 시트
 
-spr_player = {}
-spr_player['stay'] = createAnimationSet(spriteSheet_player, [0])
-spr_player['run'] = createAnimationSet(spriteSheet_player, 1, 8)            # 플레이어 달리기
-spr_player['jump'] = createAnimationSet(spriteSheet_player, [9, 10, 11])        # 플레이어 점프
+spr_player = {}                                 # 플레이어 스프라이트 세트
+spr_player['stay'] = createSpriteSet(spriteSheet_player, [0])
+spr_player['run'] = createSpriteSet(spriteSheet_player, 1, 8)
+spr_player['jump'] = createSpriteSet(spriteSheet_player, [9, 10, 11])
 
+spr_enemy = {}                                  # 적 스프라이트 세트
+spr_enemy['slime'] = createSpriteSet(spriteSheet_map1, 81, 83)          
+spr_enemy['snake'] = createSpriteSet(spriteSheet_map1, 84, 86)
+
+spr_map_struct = {}                             # 구조물 스프라이트 세트
+spr_map_struct['leaf'] = [55, 56]
+spr_map_struct['flower'] = [57, 64]
+spr_map_struct['obj'] = [65, 70]
+spr_map_struct['sign'] = [71, 74]
+spr_map_struct['gravestone'] = [75, 78]
+spr_map_struct['skull'] = [79, 80]
+ 
 createMapData()                                 # 맵 데이터 초기화
-mapImage = createMapImage(spriteShee_map1)              # 맵 이미지 생성
+mapImage, mapImage_front = createMapImage(spriteSheet_map1, spr_map_struct)              # 맵 이미지 생성
 backImage = createBackImage(spriteSheet_object)         # 배경 이미지 생성
 
+for i in range(8):
+    obj_snake = createObject(spr_enemy['snake'], (random.randrange(0, 960), 100), 'snake')
+    obj_snake = createObject(spr_enemy['slime'], (random.randrange(0, 960), 100), 'slime')
 
 # 플레이어 컨트롤 변수
 keyLeft = False
@@ -106,6 +121,15 @@ while True:
     screen_scaled.blit(pygame.transform.flip(spr_player[player_action][player_frame], player_flip, False)
                        , (player_rect.x - camera_scroll[0] - 5, player_rect.y - camera_scroll[1] - 2))      # 플레이어 드로우
 
+    for obj in objects:                                     # 오브젝트 이벤트 처리
+        if obj.destroy:
+            obj.destroy()
+        else:
+            obj.events(player_rect)
+            obj.draw(screen_scaled, camera_scroll)
+
+    screen_scaled.blit(mapImage_front, (-camera_scroll[0], -camera_scroll[1]))    # 프론트 맵 드로우
+
     # 이벤트 컨트롤
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -119,7 +143,7 @@ while True:
             if event.key == K_UP and player_flytime < 6:
                 player_vspeed = -3.5
                 player_flytime += 1
-
+                 
                 player_frame, player_action, player_frameSpeed, player_animationMode = change_playerAction(
                     player_frame, player_action, 'jump', player_frameSpeed, 6, player_animationMode, False)
         if event.type == KEYUP:
