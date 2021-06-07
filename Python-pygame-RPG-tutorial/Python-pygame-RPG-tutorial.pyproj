@@ -29,7 +29,22 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="image\" />
+    <Folder Include="font\" />
     <Folder Include="sound\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="font\munro.ttf" />
+    <Content Include="image\spriteSheet1.png" />
+    <Content Include="image\spriteSheet2.png" />
+    <Content Include="image\spriteSheet3.png" />
+    <Content Include="image\spriteSheet4.png" />
+    <Content Include="image\spriteSheet5.png" />
+    <Content Include="sound\attack.wav" />
+    <Content Include="sound\background.wav" />
+    <Content Include="sound\coin.wav" />
+    <Content Include="sound\footstep0.wav" />
+    <Content Include="sound\footstep1.wav" />
+    <Content Include="sound\monster.wav" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
